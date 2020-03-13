@@ -17,7 +17,6 @@ const SubChatSchema = mongoose.Schema(
 const ChatGroupSchema = mongoose.Schema(
   {
     chat_name: String,
-    newest_mess: String,
     users: Array,
     content: [SubChatSchema]
   },

@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 const path = require('path');
 const express = require('express');
-
+const Chat = require('./models/Chat');
 const app = express();
 const uri = require('./config/config').MONGO;
 mongoose
-  .connect(mongoDB, {
+  .connect(uri, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
@@ -18,11 +18,17 @@ mongoose
   });
 let db = mongoose.connection;
 
+// serve static files from template
+app.use(express.static(__dirname + '/public'));
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 //routes:
 app.use('/api', require('./routes/api.route'));
+app.use('/', require('./routes/website.route'));
 
 // error handler
 // define as the last app.use callback

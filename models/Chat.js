@@ -16,8 +16,6 @@ const SubChatSchema = mongoose.Schema(
 
 const ChatSchema = mongoose.Schema(
   {
-    chat_name: String,
-    newest_mess: String,
     content: [SubChatSchema]
   },
   {
