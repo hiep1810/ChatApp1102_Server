@@ -58,12 +58,14 @@ function listen(socket) {
     }
     console.log('socket.friends: ', socket.friends);
     //Send disconnect event to other friend:
+
+    //======================================================
     if (socket.friends) {
       //cant read property '0' of undefined: solved
       for (let i = 0; i < socket.friends.length; i++) {
         if (socket.friends[i].status == 'online') {
           io.to(socket.friends[i].id).emit('action', {
-            type: 'friend-id',
+            type: 'friends',
             data: {
               username: socket.username,
               status: 'offline',
@@ -73,6 +75,7 @@ function listen(socket) {
         }
       }
     }
+    //======================================================
     //Then from client emit a value to socket id set friend in this list disconnected
   });
 }
