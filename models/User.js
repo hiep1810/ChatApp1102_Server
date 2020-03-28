@@ -21,7 +21,8 @@ const UserSchema = new mongoose.Schema({
   },
   friends: Array,
   rooms: Array,
-  chats: Array
+  friendRequests: Array,
+  friendRequestsSended: Array
 });
 
 //authenticate input against database

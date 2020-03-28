@@ -11,4 +11,7 @@ router.post('/addFriend', userCntrl.addFriend);
 
 router.post('/removeFriend', userCntrl.removeFriend);
 
+router.post('/removeAddFriend', userCntrl.removeAddFriend);
+
+router.post('/users', userCntrl.getUsers);
 module.exports = router;

@@ -84,7 +84,7 @@ const login = async (socket, action) => {
         });
         //send to client that we online:
         io.to(arrOnl[_i].id).emit('action', {
-          type: 'friend-id',
+          type: 'friends',
           data: temp
         });
       } else {
@@ -109,7 +109,7 @@ const login = async (socket, action) => {
       }
     }
     //Sendback:
-    socket.emit('action', { type: 'login', data: sendback });
+    socket.emit('action', { type: 'friends', data: sendback });
   } catch (err) {
     console.log(err);
   }
@@ -150,7 +150,11 @@ const getChat = async (socket, action) => {
         sendback = null;
       }
     }
-    socket.emit('action', { type: 'get-chat', data: sendback });
+
+    socket.emit('action', {
+      type: 'get-chat',
+      data: { sendback: sendback, send_user: action.data.send_user }
+    });
   } catch (err) {
     console.log(err);
   }

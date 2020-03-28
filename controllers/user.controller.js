@@ -3,6 +3,53 @@ const Chat = require('../models/Chat');
 const objectid = require('mongoose').Types.ObjectId;
 //The objectid is indexed and save in ram so it will really fast to access it
 
+exports.getUsers = async (req, res, next) => {
+  if (isNaN(req.body.page) || typeof req.body.page !== 'number')
+    return res.status(400).send({
+      mess: 'Page not found or not a number',
+      status: false
+    });
+  else if (
+    typeof req.body.search_user == 'undefined' ||
+    typeof req.body.search_user !== 'string'
+  ) {
+    return res.status(400).send({
+      mess: 'search_user not found or not a string',
+      status: false
+    });
+  }
+
+  //console.log('req.body:', req.body);
+  let result = await User.find({
+    $and: [
+      { username: { $regex: req.body.search_user, $options: 'i' } },
+      { username: { $nin: [...req.body.except_user] } }
+    ]
+  })
+    .limit(5)
+    .skip(5 * req.body.page);
+
+  if (result) {
+    const _result = result.map(val => {
+      return {
+        _id: val._id,
+        username: val.username,
+        friends: val.friends
+      };
+    });
+
+    return res.status(200).send({
+      mess: 'get user successfully',
+      users: _result,
+      status: true
+    });
+  } else {
+    return res.status(500).send({
+      message: 'internal server error'
+    });
+  }
+};
+
 exports.getAllFriend = async (req, res, next) => {
   if (!req.body.id) {
     return res.status(400).send({
@@ -25,93 +72,144 @@ exports.getAllFriend = async (req, res, next) => {
   }
 };
 
+/**
+ * send_user_id
+ * remove_id
+ */
+exports.removeAddFriend = async (req, res, next) => {
+  if (!req.body.send_user_id) {
+    return res.status(400).send({
+      message: 'send_user_id required',
+      status: false
+    });
+  } else if (!req.body.remove_id) {
+    return res.status(400).send({
+      message: 'remove_id required',
+      status: false
+    });
+  } else {
+    const arrResult = await Promise.all([
+      User.updateOne(
+        {
+          _id: req.body.send_user_id
+        },
+        {
+          $pull: {
+            friendRequestsSended: { receive_id: req.body.remove_id }
+          }
+        }
+      ),
+      User.updateOne(
+        {
+          _id: req.body.remove_id
+        },
+        {
+          $pull: {
+            friendRequests: { send_id: req.body.send_user_id }
+          }
+        }
+      )
+    ]);
+    if (arrResult) {
+      return res.status(200).send({
+        mess: 'remove successfully',
+        res: arrResult
+      });
+    }
+    return res.status(500).send({
+      mess: 'internal server error'
+    });
+  }
+};
+
+/**
+ * API addFriend:
+ * ------------------
+ * - send_id
+ * - send_user
+ * - receive_id
+ * - receive_user
+ * - mess (optional)
+ * -------------------
+ */
 exports.addFriend = async (req, res, next) => {
-  if (!req.body.friend_name) {
+  if (!req.body.send_id) {
     return res.status(400).send({
-      message: 'friend name required',
+      message: 'send_id required',
       status: false
     });
-  } else if (!req.body.id) {
+  } else if (!req.body.receive_user) {
     return res.status(400).send({
-      message: 'user id required',
+      message: 'receive_user required',
       status: false
     });
-  } else if (!req.body.username) {
+  } else if (!req.body.receive_id) {
     return res.status(400).send({
-      message: 'useername required',
+      message: 'receive_id required',
+      status: false
+    });
+  } else if (!req.body.send_user) {
+    return res.status(400).send({
+      message: 'send_user required',
       status: false
     });
   } else {
     try {
-      let chat = new Chat({
-        content: []
-      });
+      let arrResult = await Promise.all([
+        User.updateOne(
+          //condition:
+          {
+            _id: req.body.receive_id,
+            'friendRequests.send_id': {
+              $ne: req.body.send_id
+            }
+          },
 
-      Chat.create(chat, async (err, _chat) => {
-        if (err) {
-          res.status(500).send({
-            mess: 'internal server error',
-            status: false
-          });
-          throw new Error(err);
-        } else if (!_chat) {
-          res.status(401).send({
-            mess: `can not insert chats`,
-            status: false
-          });
-        } else {
-          let arrResult = await Promise.all([
-            User.findOneAndUpdate(
-              //condition
-              { _id: new ObjectId(req.body.id) },
-              //update:
-              {
-                $addToSet: { friends: [req.body.friend_name] },
-                $addToSet: { chats: [{ [req.body.friend_name]: _chat._id }] }
+          //update:
+          {
+            $push: {
+              friendRequests: {
+                send_id: req.body.send_id,
+                send_user: req.body.send_user,
+                mess: !req.body.mess ? 'Kết bạn nha!!!' : req.body.mess
               }
-            ),
-            User.findOneAndUpdate(
-              //condition:
-              { username: req.body.friend_name },
-              //update:
-              {
-                $addToSet: { friends: [req.body.username] },
-                $addToSet: { chats: [{ [req.body.friend_name]: _chat._id }] }
-              }
-            )
-          ]);
-          /*
-            let result = await User.findOneAndUpdate(
-              //condition
-              { _id : req.body.id  },
-              //update:
-              { $addToSet: { friends: [req.body.friend_name] } }
-            );
-            let result2 = await User.findOneAndUpdate(
-              //condition:
-              { username : req.body.friend_name}
-              //update:
-              {$addToSet : {friends: [req.body.username]}}
-              );
-              */
-          console.log(arrResult);
-          if (!arrResult) {
-            return res.status(400).send({
-              message: 'add friend failed',
-              status: false
-            });
+            }
           }
-
-          return res.status(200).send({
-            message: 'add friend successfully',
-            status: true
-          });
-        }
+        ),
+        User.updateOne(
+          //condition:
+          {
+            _id: req.body.send_id,
+            'friendRequestsSended.receive_id': {
+              $ne: req.body.receive_id
+            }
+          },
+          //update:
+          {
+            $push: {
+              friendRequestsSended: {
+                receive_id: req.body.receive_id,
+                receive_user: req.body.receive_user,
+                mess: !req.body.mess ? 'Kết bạn nha!!!' : req.body.mess
+              }
+            }
+          }
+        )
+      ]);
+      console.log('arrResult:');
+      console.log(arrResult);
+      if (arrResult) {
+        return res.status(200).send({
+          message: 'Add friend successfully',
+          status: true
+        });
+      }
+      return res.status(500).send({
+        message: 'internal server error'
       });
     } catch (err) {
       return res.status(500).send({
-        message: 'internal server error',
-        status: false
+        message: 'internal server error'
       });
     }
   }
