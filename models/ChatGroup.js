@@ -6,22 +6,30 @@ const SubChatSchema = mongoose.Schema(
   {
     timestamp: String,
     send_user: String,
-    chat: String
+    chat: String,
+    image: String,
+    video: String,
+    file: String,
+    fileType: String,
   },
   {
     _id: false,
-    versionKey: false
+    versionKey: false,
   }
 );
 
 const ChatGroupSchema = mongoose.Schema(
   {
-    chat_name: String,
+    chat_name: {
+      type: String,
+      trim: true,
+    },
     users: Array,
-    content: [SubChatSchema]
+    creator: String,
+    content: [SubChatSchema],
   },
   {
-    versionKey: false
+    versionKey: false,
   }
 );
 

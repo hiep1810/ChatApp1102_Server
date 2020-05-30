@@ -7,12 +7,12 @@ const uri = require('./config/config').MONGO;
 mongoose
   .connect(uri, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then(() => {
     console.log('connect: success');
   })
-  .catch(err => {
+  .catch((err) => {
     console.log('connect: error');
     throw err;
   });
@@ -32,22 +32,23 @@ app.use('/', require('./routes/website.route'));
 
 // error handler
 // define as the last app.use callback
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.send(err.message);
 });
-
+let arrOnl = [];
+let arrRoomOnl = [];
 let server = require('http').Server(app);
 const io = require('socket.io')(server);
 const service = require('./socket_service/service')(io);
 
-io.sockets.on('error', e => console.log(e.message));
-io.sockets.on('connection', socket => {
+io.sockets.on('error', (e) => console.log(e.message));
+io.sockets.on('connection', (socket) => {
   service.listen(socket);
 });
 
 let port = process.env.PORT || 3000;
 
-server.listen(port, function() {
+server.listen(port, function () {
   console.log(`Server listening on port ${port}`);
 });
