@@ -4,6 +4,8 @@ const express = require('express');
 const Chat = require('./models/Chat');
 const app = express();
 const uri = require('./config/config').MONGO;
+
+//feature/foreReactNative/changeSomeProp
 mongoose
   .connect(uri, {
     useNewUrlParser: true,
